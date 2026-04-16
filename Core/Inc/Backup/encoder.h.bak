@@ -1,0 +1,19 @@
+#ifndef ENCODER_H
+#define ENCODER_H
+
+#include "main.h"
+#include "tim.h"
+
+typedef struct
+{
+  TIM_HandleTypeDef *htim;
+  int16_t per_rev;
+  int16_t state;
+  float rotations;
+} encoder_t;
+
+void encoder_init(encoder_t *encoder);
+
+float encoder_get_rotations(encoder_t *encoder);
+
+#endif

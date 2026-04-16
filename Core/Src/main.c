@@ -24,7 +24,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
 #include "motor_driver.h"
+#include "encoder.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -52,6 +54,11 @@ motor_t motor1 = {
   .dir_pin = M1_DIR_Pin,
   .max_pwm = TIM2_ARR
 };
+
+encoder_t encoder1 = {
+  .htim = &htim1,
+  .per_rev = 1940
+};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -62,7 +69,11 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+int _write(int file, char *ptr, int len)
+{
+  HAL_UART_Transmit(&huart2, (uint8_t *)ptr, len, HAL_MAX_DELAY);
+  return len;
+}
 /* USER CODE END 0 */
 
 /**
@@ -96,22 +107,19 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   MX_TIM2_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
   motor_init(&motor1);
+  encoder_init(&encoder1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    motor_set_pwm(&motor1, 100, ROTATION_CW);
-    HAL_Delay(2000);
-    motor_stop(&motor1);
-    HAL_Delay(2000);
-    motor_set_pwm(&motor1, 100, ROTATION_CCW);
-    HAL_Delay(2000);
-    motor_set_pwm(&motor1, 255, ROTATION_CCW);
-    HAL_Delay(2000);
+    float rots = encoder_get_rotations(&encoder1);
+    printf("Enkoder: %f\r\n", rots);
+    HAL_Delay(500);
 
     /* USER CODE END WHILE */
 

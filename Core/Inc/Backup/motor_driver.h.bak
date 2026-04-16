@@ -33,7 +33,6 @@ typedef struct
  */
 typedef enum
 {
-  ROTATION_NONE = 0U, /**< Motor idle / coasting.      */
   ROTATION_CW,        /**< Clockwise rotation.         */
   ROTATION_CCW        /**< Counter-clockwise rotation. */
 } RotationDirection_t;
