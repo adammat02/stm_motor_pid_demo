@@ -47,11 +47,14 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     Core/Src/motor_driver.c
     Core/Src/encoder.c
+    Drivers/CMSIS/DSP/Source/ControllerFunctions/arm_pid_init_f32.c
+    Drivers/CMSIS/DSP/Source/ControllerFunctions/arm_pid_reset_f32.c
 )
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
+    Drivers/CMSIS/DSP/Include
 )
 
 # Add project symbols (macros)

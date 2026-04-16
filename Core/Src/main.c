@@ -25,6 +25,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include "arm_math.h"
 #include "motor_driver.h"
 #include "encoder.h"
 /* USER CODE END Includes */
