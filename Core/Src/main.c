@@ -28,6 +28,7 @@
 #include "arm_math.h"
 #include "motor_driver.h"
 #include "encoder.h"
+#include "motor_pid.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -59,6 +60,15 @@ motor_t motor1 = {
 encoder_t encoder1 = {
   .htim = &htim1,
   .per_rev = 1940
+};
+
+motor_pid_t motor_pid = {
+  .motor = &motor1,
+  .encoder = &encoder1,
+  .max_rpm = 160,
+  .kp = 3.0,
+  .ki = 0.5,
+  .kd = 0.1,
 };
 /* USER CODE END PV */
 
@@ -112,15 +122,15 @@ int main(void)
   /* USER CODE BEGIN 2 */
   motor_init(&motor1);
   encoder_init(&encoder1);
+  motor_pid_init(&motor_pid);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    float rots = encoder_get_rotations(&encoder1);
-    printf("Enkoder: %f\r\n", rots);
-    HAL_Delay(500);
+    motor_pid_update(&motor_pid, 50, ROTATION_CW);
+    HAL_Delay(10);
 
     /* USER CODE END WHILE */
 
