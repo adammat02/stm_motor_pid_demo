@@ -26,6 +26,14 @@ void motor_pid_update(motor_pid_t *motor_pid, float32_t set_rpm, RotationDirecti
   if (dt == 0)
     return;
 
+  if (set_rpm == 0.0)
+  {
+    motor_stop(motor_pid->motor);
+    arm_pid_init_f32(&motor_pid->pid, 1);
+    motor_pid->rpm_filtered = 0.0f;
+    return;
+  }
+
   float rot = encoder_get_rotations(motor_pid->encoder);
   float rpm = fabs((rot - motor_pid->prev_rot) / (float)dt * 60000000.0f);
   motor_pid->prev_rot = rot;
