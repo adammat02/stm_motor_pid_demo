@@ -26,6 +26,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include "arm_math.h"
+#include "micros.h"
 #include "motor_driver.h"
 #include "encoder.h"
 #include "motor_pid.h"
@@ -85,12 +86,6 @@ int _write(int file, char *ptr, int len)
   HAL_UART_Transmit(&huart2, (uint8_t *)ptr, len, HAL_MAX_DELAY);
   return len;
 }
-
-uint32_t micros()
-{
-  return __HAL_TIM_GET_COUNTER(&htim5);
-}
-
 /* USER CODE END 0 */
 
 /**
@@ -127,7 +122,7 @@ int main(void)
   MX_TIM1_Init();
   MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
-  HAL_TIM_Base_Start(&htim5);
+  micros_tim_init(&htim5);
   motor_init(&motor1);
   encoder_init(&encoder1);
   motor_pid_init(&motor_pid);
