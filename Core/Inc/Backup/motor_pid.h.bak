@@ -18,8 +18,6 @@ typedef struct
   float32_t kp;
   float32_t ki;
   float32_t kd;
-  float32_t alpha;        // filtr EMA na RPM: 0.0 (max tłumienie) .. 1.0 (brak filtra)
-  float32_t rpm_filtered;
 } motor_pid_t;
 
 void motor_pid_init(motor_pid_t *motor_pid);
