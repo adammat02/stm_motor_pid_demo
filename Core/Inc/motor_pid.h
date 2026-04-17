@@ -71,4 +71,18 @@ void motor_pid_init(motor_pid_t *motor_pid);
  */
 void motor_pid_update(motor_pid_t *motor_pid, float32_t set_rpm, RotationDirection_t dir);
 
+/**
+ * @brief Update PID gains at runtime without resetting the controller state.
+ *
+ * Recalculates the internal CMSIS-DSP coefficients (A0/A1/A2) from the new
+ * gains. The integrator state is preserved, so the output remains bumpless
+ * for small gain changes.
+ *
+ * @param motor_pid  Controller instance.
+ * @param kp         Proportional gain.
+ * @param ki         Integral gain.
+ * @param kd         Derivative gain.
+ */
+void motor_pid_set_pid(motor_pid_t *motor_pid, float32_t kp, float32_t ki, float32_t kd);
+
 #endif

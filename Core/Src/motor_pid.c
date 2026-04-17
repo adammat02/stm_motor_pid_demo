@@ -53,3 +53,16 @@ void motor_pid_update(motor_pid_t *motor_pid, float32_t set_rpm, RotationDirecti
 
   motor_set_pwm(motor_pid->motor, (uint32_t)pwm, dir);
 }
+
+void motor_pid_set_pid(motor_pid_t *motor_pid, float32_t kp, float32_t ki, float32_t kd)
+{
+  motor_pid->kp = kp;
+  motor_pid->ki = ki;
+  motor_pid->kd = kd;
+
+  motor_pid->pid.Kp = kp;
+  motor_pid->pid.Ki = ki;
+  motor_pid->pid.Kd = kd;
+
+  arm_pid_init_f32(&motor_pid->pid, 0);
+}
