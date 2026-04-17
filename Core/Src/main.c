@@ -30,6 +30,7 @@
 #include "motor_driver.h"
 #include "encoder.h"
 #include "motor_pid.h"
+#include "uart_comm.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -86,6 +87,12 @@ int _write(int file, char *ptr, int len)
   HAL_UART_Transmit(&huart2, (uint8_t *)ptr, len, HAL_MAX_DELAY);
   return len;
 }
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+  if (huart == &huart2)
+    uart_rx_byte_callback();
+}
 /* USER CODE END 0 */
 
 /**
@@ -126,17 +133,29 @@ int main(void)
   motor_init(&motor1);
   encoder_init(&encoder1);
   motor_pid_init(&motor_pid);
+  uart_init(&huart2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  float32_t sp = 30;
+  //float32_t sp = 30;
   uint32_t time = micros();
+  char buff[100];
+  char rx_buff[100];
+  while (1)
   while (1)
   {
-    if (micros() - time > 1000)
+
+    if (micros() - time > 10000)
     {
-      motor_pid_update(&motor_pid, sp, ROTATION_CW);
+      if (uart_is_line())
+      {
+        uart_get_line(rx_buff, sizeof(rx_buff));
+        snprintf(buff, sizeof(buff), "Dostalem: %s\n", rx_buff);
+        uart_send_str(buff);
+        uart_send_str("OK\r");
+      }
+      //motor_pid_update(&motor_pid, sp, ROTATION_CW);
       time = micros();
     }
 

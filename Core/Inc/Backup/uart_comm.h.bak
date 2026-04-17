@@ -1,0 +1,18 @@
+#ifndef UART_COMM_H
+#define UART_COMM_H
+
+#include "stm32l4xx_hal_uart.h"
+#include "usart.h"
+
+#define RX_BUFF_LEN 100
+
+extern volatile char cmd_line[RX_BUFF_LEN];
+extern volatile uint8_t cmd_ready;
+
+void uart_init(UART_HandleTypeDef *huart);
+
+void uart_rx_byte(uint8_t byte);
+
+void uart_send_str(const char *str);
+
+#endif
