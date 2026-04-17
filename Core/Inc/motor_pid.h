@@ -11,6 +11,7 @@ typedef struct
   encoder_t *encoder;
   arm_pid_instance_f32 pid;
   int16_t max_rpm;
+  uint8_t ff_enable;
   float prev_rot;
   uint32_t last_time;
   float32_t ff_gain;
@@ -21,6 +22,6 @@ typedef struct
 
 void motor_pid_init(motor_pid_t *motor_pid);
 
-void motor_pid_update(motor_pid_t *motor_pid, float32_t set_speed, RotationDirection_t dir);
+void motor_pid_update(motor_pid_t *motor_pid, float32_t set_rpm, RotationDirection_t dir);
 
 #endif
