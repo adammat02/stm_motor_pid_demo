@@ -51,7 +51,5 @@ void motor_pid_update(motor_pid_t *motor_pid, float32_t set_rpm, RotationDirecti
     motor_pid->pid.state[2] = pid_out;
   }
 
-  printf(">rpm:%f,set_rpm:%f,pwm:%f\r\n", motor_pid->rpm_filtered, set_rpm, pwm);
-
   motor_set_pwm(motor_pid->motor, (uint32_t)pwm, dir);
 }
