@@ -50,6 +50,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Core/Src/motor_pid.c
     Core/Src/micros.c
     Core/Src/uart_comm.c
+    Core/Src/cmd_parser.c
     Drivers/CMSIS/DSP/Source/ControllerFunctions/arm_pid_init_f32.c
     Drivers/CMSIS/DSP/Source/ControllerFunctions/arm_pid_reset_f32.c
 )

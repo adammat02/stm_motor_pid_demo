@@ -31,6 +31,7 @@
 #include "encoder.h"
 #include "motor_pid.h"
 #include "uart_comm.h"
+#include "cmd_parser.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -140,8 +141,9 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   //float32_t sp = 30;
   uint32_t time = micros();
-  char buff[100];
   char rx_buff[100];
+  char out[64];
+  Command cmd;
   while (1)
   while (1)
   {
@@ -151,9 +153,15 @@ int main(void)
       if (uart_is_line())
       {
         uart_get_line(rx_buff, sizeof(rx_buff));
-        snprintf(buff, sizeof(buff), "Dostalem: %s\n", rx_buff);
-        uart_send_str(buff);
-        uart_send_str("OK\r");
+        if (parse_command(rx_buff, &cmd))
+        {
+          dispatch_command(out, &cmd);
+          uart_send_str(out);
+        }
+        else
+        {
+          uart_send_str("ERR\r");
+        }
       }
       //motor_pid_update(&motor_pid, sp, ROTATION_CW);
       time = micros();
