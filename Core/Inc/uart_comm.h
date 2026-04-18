@@ -56,6 +56,6 @@ bool uart_is_line(void);
  * @param out  Destination buffer.
  * @param len  Size of @p out in bytes.
  */
-void uart_get_line(char *out, uint16_t len);
+void uart_get_line(char *out, size_t len);
 
 #endif

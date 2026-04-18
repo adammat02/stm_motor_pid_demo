@@ -24,8 +24,8 @@ void uart_rx_byte_callback()
   {
     if (idx > 0)
     {
-      rx_buff[idx++] = '\0';
-      memcpy((void*)line, rx_buff, idx);
+      rx_buff[idx] = '\0';
+      memcpy((void*)line, rx_buff, idx + 1);
       line_ready = true;
       idx = 0;
     }
@@ -55,7 +55,7 @@ bool uart_is_line()
   return line_ready;
 }
 
-void uart_get_line(char *out, uint16_t len)
+void uart_get_line(char *out, size_t len)
 {
   if (!line_ready)
     return;
