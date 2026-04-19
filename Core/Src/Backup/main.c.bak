@@ -31,6 +31,7 @@
 #include "encoder.h"
 #include "motor_pid.h"
 #include "uart_comm.h"
+#include "cmd_parser.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -87,6 +88,12 @@ int _write(int file, char *ptr, int len)
   HAL_UART_Transmit(&huart2, (uint8_t *)ptr, len, HAL_MAX_DELAY);
   return len;
 }
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+  if (huart == &huart2)
+    uart_rx_byte_callback();
+}
 /* USER CODE END 0 */
 
 /**
@@ -127,18 +134,66 @@ int main(void)
   motor_init(&motor1);
   encoder_init(&encoder1);
   motor_pid_init(&motor_pid);
+  uart_init(&huart2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  float32_t sp = 30;
+  float32_t sp = 0;
+  float pos0 = 0.0;
   uint32_t time = micros();
+  uint32_t time2 = micros();
+  char rx_buff[100];
+  char out[64];
+  Command cmd;
   while (1)
   {
-    if (micros() - time > 1000)
+
+    if (micros() - time > 10000)
+    {
+      if (uart_is_line())
+      {
+        uart_get_line(rx_buff, sizeof(rx_buff));
+        if (parse_command(rx_buff, &cmd))
+        {
+          CmdType type = cmd.cmd;
+          switch (type)
+          {
+            case CMD_GET_POS:
+            {
+              pos0 = encoder_get_rotations(&encoder1);
+              sprintf(out, "CMD_GET_POS;%f\r", pos0);
+              break;
+            }
+            case CMD_SET_SPEED:
+            {
+              sprintf(out, "CMD_SET_SPEED;%hd;%hd;%hd;%hd\r", cmd.speeds[0], cmd.speeds[1], cmd.speeds[2], cmd.speeds[3]);
+              sp = (float32_t)cmd.speeds[0];
+              break;
+            }
+            case CMD_SET_PID:
+            {
+              sprintf(out, "CMD_SET_PID;%.2f;%.2f;%.2f\r", cmd.set_pid.kp, cmd.set_pid.ki, cmd.set_pid.kd);
+              break;
+            }
+            default:
+              break;
+          }
+          uart_send_str(out);
+        }
+        else
+        {
+          uart_send_str("ERR\r");
+        }
+      }
+
+      time = micros();
+    }
+
+    if (micros() - time2 > 1000)
     {
       motor_pid_update(&motor_pid, sp, ROTATION_CW);
-      time = micros();
+      time2 = micros();
     }
 
     /* USER CODE END WHILE */

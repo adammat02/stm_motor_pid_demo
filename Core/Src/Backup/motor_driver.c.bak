@@ -13,7 +13,7 @@ void motor_init(motor_t *motor)
 
 void motor_set_pwm(motor_t *motor, uint32_t value, RotationDirection_t dir)
 {
-  GPIO_PinState state = ((dir == ROTATION_CW) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+  GPIO_PinState state = ((dir == ROTATION_CCW) ? GPIO_PIN_SET : GPIO_PIN_RESET);
   clamp_pwm(&value, motor->max_pwm);
 
   HAL_GPIO_WritePin(motor->dir_port, motor->dir_pin, state);

@@ -63,7 +63,7 @@ encoder_t encoder1 = {
     .htim = &htim1,
     .per_rev = 1940};
 
-motor_pid_t motor_pid = {
+motor_pid_t motor_pid1 = {
     .motor = &motor1,
     .encoder = &encoder1,
     .max_rpm = 160,
@@ -71,8 +71,16 @@ motor_pid_t motor_pid = {
     .kp = 3.0,
     .ki = 0.5,
     .kd = 0.2,
-    .alpha = 0.5
-};
+    .alpha = 0.5};
+
+float32_t sp = 0;
+RotationDirection_t dir = ROTATION_CCW;
+float pos0 = 0.0;
+uint32_t time = 0;
+uint32_t time2 = 0;
+char rx_buff[100];
+char out[64];
+Command cmd;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -94,12 +102,50 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   if (huart == &huart2)
     uart_rx_byte_callback();
 }
+
+void execute_command(Command cmd)
+{
+  CmdType type = cmd.cmd;
+  switch (type)
+  {
+  case CMD_GET_POS:
+  {
+    pos0 = encoder_get_rotations(&encoder1);
+    sprintf(out, "CMD_GET_POS;%.3f;\r", pos0);
+    break;
+  }
+  case CMD_SET_SPEED:
+  {
+    sprintf(out, "CMD_SET_SPEED;%hd;\r", cmd.speeds[0]);
+    if (cmd.speeds[0] >= 0)
+    {
+      sp = (float32_t)cmd.speeds[0];
+      dir = ROTATION_CCW;
+    }
+    else
+    {
+      sp = -(float32_t)cmd.speeds[0];
+      dir = ROTATION_CW;
+    }
+    break;
+  }
+  case CMD_SET_PID:
+  {
+    sprintf(out, "CMD_SET_PID;%.2f;%.2f;%.2f;\r", cmd.set_pid.kp, cmd.set_pid.ki, cmd.set_pid.kd);
+    motor_pid_set_pid(&motor_pid1, cmd.set_pid.kp, cmd.set_pid.ki, cmd.set_pid.kd);
+    break;
+  }
+  default:
+    break;
+  }
+  uart_send_str(out);
+}
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  The application entry point.
+ * @retval int
+ */
 int main(void)
 {
 
@@ -133,21 +179,16 @@ int main(void)
   micros_tim_init(&htim5);
   motor_init(&motor1);
   encoder_init(&encoder1);
-  motor_pid_init(&motor_pid);
+  motor_pid_init(&motor_pid1);
   uart_init(&huart2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  //float32_t sp = 30;
-  uint32_t time = micros();
-  char rx_buff[100];
-  char out[64];
-  Command cmd;
-  while (1)
+  time = micros();
+  time2 = micros();
   while (1)
   {
-
     if (micros() - time > 10000)
     {
       if (uart_is_line())
@@ -155,18 +196,21 @@ int main(void)
         uart_get_line(rx_buff, sizeof(rx_buff));
         if (parse_command(rx_buff, &cmd))
         {
-          dispatch_command(out, &cmd);
-          uart_send_str(out);
+          execute_command(cmd);
         }
         else
         {
           uart_send_str("ERR\r");
         }
       }
-      //motor_pid_update(&motor_pid, sp, ROTATION_CW);
       time = micros();
     }
 
+    if (micros() - time2 > 1000)
+    {
+      motor_pid_update(&motor_pid1, sp, dir);
+      time2 = micros();
+    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -175,24 +219,24 @@ int main(void)
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+ * @brief System Clock Configuration
+ * @retval None
+ */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
   /** Configure the main internal regulator output voltage
-  */
+   */
   if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1) != HAL_OK)
   {
     Error_Handler();
   }
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
+   * in the RCC_OscInitTypeDef structure.
+   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
@@ -209,9 +253,8 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
@@ -228,9 +271,9 @@ void SystemClock_Config(void)
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -243,12 +286,12 @@ void Error_Handler(void)
 }
 #ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
