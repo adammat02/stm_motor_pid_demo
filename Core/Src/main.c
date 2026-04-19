@@ -41,7 +41,13 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define N_MOTORS 4
+#define PER_REV 1940
+#define MAX_RPM 160
+#define KP 3.0f
+#define KI 0.5f
+#define KD 0.2f
+#define ALPHA 0.5f
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -52,34 +58,32 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-motor_t motor1 = {
-    .htim = &htim2,
-    .channel = TIM_CHANNEL_2,
-    .dir_port = M1_DIR_GPIO_Port,
-    .dir_pin = M1_DIR_Pin,
-    .max_pwm = TIM2_ARR};
+motor_t motors[N_MOTORS] = {
+  { .htim = &htim8, .channel = TIM_CHANNEL_1, .dir_port = M1_DIR_GPIO_Port, .dir_pin = M1_DIR_Pin, .max_pwm = TIM8_ARR },
+  { .htim = &htim8, .channel = TIM_CHANNEL_2, .dir_port = M2_DIR_GPIO_Port, .dir_pin = M2_DIR_Pin, .max_pwm = TIM8_ARR },
+  { .htim = &htim8, .channel = TIM_CHANNEL_3, .dir_port = M3_DIR_GPIO_Port, .dir_pin = M3_DIR_Pin, .max_pwm = TIM8_ARR },
+  { .htim = &htim8, .channel = TIM_CHANNEL_4, .dir_port = M4_DIR_GPIO_Port, .dir_pin = M4_DIR_Pin, .max_pwm = TIM8_ARR }
+};
 
-encoder_t encoder1 = {
-    .htim = &htim1,
-    .per_rev = 1940};
+encoder_t encoders[N_MOTORS] = {
+  { .htim = &htim1, .per_rev = PER_REV },
+  { .htim = &htim2, .per_rev = PER_REV },
+  { .htim = &htim3, .per_rev = PER_REV },
+  { .htim = &htim4, .per_rev = PER_REV }
+};
 
-motor_pid_t motor_pid1 = {
-    .motor = &motor1,
-    .encoder = &encoder1,
-    .max_rpm = 160,
-    .ff_enable = 0,
-    .kp = 3.0,
-    .ki = 0.5,
-    .kd = 0.2,
-    .alpha = 0.5};
+motor_pid_t motor_pids[N_MOTORS] = {
+  { .motor = &motors[0], .encoder = &encoders[0], .max_rpm = MAX_RPM, .kp = KP, .ki = KI, .kd = KD, .alpha = ALPHA },
+  { .motor = &motors[1], .encoder = &encoders[1], .max_rpm = MAX_RPM, .kp = KP, .ki = KI, .kd = KD, .alpha = ALPHA },
+  { .motor = &motors[2], .encoder = &encoders[2], .max_rpm = MAX_RPM, .kp = KP, .ki = KI, .kd = KD, .alpha = ALPHA },
+  { .motor = &motors[3], .encoder = &encoders[3], .max_rpm = MAX_RPM, .kp = KP, .ki = KI, .kd = KD, .alpha = ALPHA }
+};
 
-float32_t sp = 0;
-RotationDirection_t dir = ROTATION_CCW;
-float pos0 = 0.0;
-uint32_t time = 0;
-uint32_t time2 = 0;
-char rx_buff[100];
-char out[64];
+RotationDirection_t dirs[N_MOTORS] = { ROTATION_CCW, ROTATION_CCW, ROTATION_CCW, ROTATION_CCW };
+float poses[N_MOTORS];
+float32_t set_speed[N_MOTORS];
+uint32_t time, time2;
+char rx_buff[100], out[128];
 Command cmd;
 /* USER CODE END PV */
 
@@ -103,36 +107,37 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     uart_rx_byte_callback();
 }
 
-void execute_command(Command cmd)
+void execute_command(const Command *cmd)
 {
-  CmdType type = cmd.cmd;
+  CmdType type = cmd->cmd;
   switch (type)
   {
   case CMD_GET_POS:
   {
-    pos0 = encoder_get_rotations(&encoder1);
-    sprintf(out, "CMD_GET_POS;%.3f;\r", pos0);
+    for (uint8_t i = 0; i < N_MOTORS; i++)
+    {
+      poses[i] = encoder_get_rotations(&encoders[i]);
+    }
+    sprintf(out, "CMD_GET_POS;%.3f;%.3f;%.3f;%.3f\r", poses[0], poses[1], poses[2], poses[3]);
     break;
   }
   case CMD_SET_SPEED:
   {
-    sprintf(out, "CMD_SET_SPEED;%hd;\r", cmd.speeds[0]);
-    if (cmd.speeds[0] >= 0)
+    sprintf(out, "CMD_SET_SPEED;%hd;%hd;%hd;%hd\r", cmd->speeds[0], cmd->speeds[1], cmd->speeds[2], cmd->speeds[3]);
+    for (uint8_t i = 0; i < N_MOTORS; i++)
     {
-      sp = (float32_t)cmd.speeds[0];
-      dir = ROTATION_CCW;
-    }
-    else
-    {
-      sp = -(float32_t)cmd.speeds[0];
-      dir = ROTATION_CW;
+      dirs[i] = (cmd->speeds[i] >= 0) ? ROTATION_CCW : ROTATION_CW;
+      set_speed[i] = fabsf(cmd->speeds[i]);
     }
     break;
   }
   case CMD_SET_PID:
   {
-    sprintf(out, "CMD_SET_PID;%.2f;%.2f;%.2f;\r", cmd.set_pid.kp, cmd.set_pid.ki, cmd.set_pid.kd);
-    motor_pid_set_pid(&motor_pid1, cmd.set_pid.kp, cmd.set_pid.ki, cmd.set_pid.kd);
+    sprintf(out, "CMD_SET_PID;%.2f;%.2f;%.2f;\r", cmd->set_pid.kp, cmd->set_pid.ki, cmd->set_pid.kd);
+    for (uint8_t i = 0; i < N_MOTORS; i++)
+    {
+      motor_pid_set_pid(&motor_pids[i], cmd->set_pid.kp, cmd->set_pid.ki, cmd->set_pid.kd);
+    }
     break;
   }
   default:
@@ -143,9 +148,9 @@ void execute_command(Command cmd)
 /* USER CODE END 0 */
 
 /**
- * @brief  The application entry point.
- * @retval int
- */
+  * @brief  The application entry point.
+  * @retval int
+  */
 int main(void)
 {
 
@@ -175,12 +180,21 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM1_Init();
   MX_TIM5_Init();
+  MX_TIM3_Init();
+  MX_TIM4_Init();
+  MX_TIM8_Init();
   /* USER CODE BEGIN 2 */
+
   micros_tim_init(&htim5);
-  motor_init(&motor1);
-  encoder_init(&encoder1);
-  motor_pid_init(&motor_pid1);
   uart_init(&huart2);
+
+  for (uint8_t i = 0; i < N_MOTORS; i++)
+  {
+    motor_init(&motors[i]);
+    encoder_init(&encoders[i]);
+    motor_pid_init(&motor_pids[i]);
+  }
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -196,7 +210,7 @@ int main(void)
         uart_get_line(rx_buff, sizeof(rx_buff));
         if (parse_command(rx_buff, &cmd))
         {
-          execute_command(cmd);
+          execute_command(&cmd);
         }
         else
         {
@@ -208,7 +222,10 @@ int main(void)
 
     if (micros() - time2 > 1000)
     {
-      motor_pid_update(&motor_pid1, sp, dir);
+      for (uint8_t i = 0; i < N_MOTORS; i++)
+      {
+        motor_pid_update(&motor_pids[i], set_speed[i], dirs[i]);
+      }
       time2 = micros();
     }
     /* USER CODE END WHILE */
@@ -219,24 +236,24 @@ int main(void)
 }
 
 /**
- * @brief System Clock Configuration
- * @retval None
- */
+  * @brief System Clock Configuration
+  * @retval None
+  */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
   /** Configure the main internal regulator output voltage
-   */
+  */
   if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1) != HAL_OK)
   {
     Error_Handler();
   }
 
   /** Initializes the RCC Oscillators according to the specified parameters
-   * in the RCC_OscInitTypeDef structure.
-   */
+  * in the RCC_OscInitTypeDef structure.
+  */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
@@ -253,8 +270,9 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
@@ -271,9 +289,9 @@ void SystemClock_Config(void)
 /* USER CODE END 4 */
 
 /**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -286,12 +304,12 @@ void Error_Handler(void)
 }
 #ifdef USE_FULL_ASSERT
 /**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */

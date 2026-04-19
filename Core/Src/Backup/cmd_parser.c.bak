@@ -45,28 +45,3 @@ bool parse_command(const char *line, Command *cmd)
       return false;
   }
 }
-
-bool dispatch_command(const char *out, Command *cmd)
-{
-  CmdType type = cmd->cmd;
-  switch (type)
-  {
-    case CMD_GET_POS:
-    {
-      strcpy(out, "CMD_GET_POS\r");
-      return true;
-    }
-    case CMD_SET_SPEED:
-    {
-      sprintf(out, "CMD_SET_SPEED;%hd;%hd;%hd;%hd\r", cmd->speeds[0], cmd->speeds[1], cmd->speeds[2], cmd->speeds[3]);
-      return true;
-    }
-    case CMD_SET_PID:
-    {
-      sprintf(out, "CMD_SET_PID;%.2f;%.2f;%.2f\r", cmd->set_pid.kp, cmd->set_pid.ki, cmd->set_pid.kd);
-      return true;
-    }
-    default:
-      return false;
-  }
-}
