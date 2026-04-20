@@ -51,6 +51,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Core/Src/micros.c
     Core/Src/uart_comm.c
     Core/Src/cmd_parser.c
+    Core/Src/controller.c
     Drivers/CMSIS/DSP/Source/ControllerFunctions/arm_pid_init_f32.c
     Drivers/CMSIS/DSP/Source/ControllerFunctions/arm_pid_reset_f32.c
 )
@@ -59,6 +60,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
     Drivers/CMSIS/DSP/Include
+    Core/Inc
 )
 
 # Add project symbols (macros)
