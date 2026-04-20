@@ -80,6 +80,7 @@ motor_pid_t motor_pids[N_MOTORS] = {
 };
 
 RotationDirection_t dirs[N_MOTORS] = { ROTATION_CCW, ROTATION_CCW, ROTATION_CCW, ROTATION_CCW };
+int8_t motor_sign[N_MOTORS] = { 1, -1, 1, -1};
 float poses[N_MOTORS];
 float32_t set_speed[N_MOTORS];
 uint32_t time, time2;
@@ -116,7 +117,7 @@ void execute_command(const Command *cmd)
   {
     for (uint8_t i = 0; i < N_MOTORS; i++)
     {
-      poses[i] = encoder_get_rotations(&encoders[i]);
+      poses[i] = encoder_get_rotations(&encoders[i]) * motor_sign[i];
     }
     sprintf(out, "CMD_GET_POS;%.3f;%.3f;%.3f;%.3f\r", poses[0], poses[1], poses[2], poses[3]);
     break;
@@ -126,7 +127,8 @@ void execute_command(const Command *cmd)
     sprintf(out, "CMD_SET_SPEED;%hd;%hd;%hd;%hd\r", cmd->speeds[0], cmd->speeds[1], cmd->speeds[2], cmd->speeds[3]);
     for (uint8_t i = 0; i < N_MOTORS; i++)
     {
-      dirs[i] = (cmd->speeds[i] >= 0) ? ROTATION_CCW : ROTATION_CW;
+      int16_t dir = cmd->speeds[i] * motor_sign[i];
+      dirs[i] = (dir >= 0) ? ROTATION_CCW : ROTATION_CW;
       set_speed[i] = fabsf(cmd->speeds[i]);
     }
     break;
