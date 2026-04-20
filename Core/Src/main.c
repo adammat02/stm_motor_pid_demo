@@ -117,7 +117,7 @@ void execute_command(const Command *cmd)
   {
     for (uint8_t i = 0; i < N_MOTORS; i++)
     {
-      poses[i] = encoder_get_rotations(&encoders[i]) * motor_sign[i];
+      poses[i] = encoder_get_rotations(&encoders[i]) * (float)motor_sign[i];
     }
     sprintf(out, "CMD_GET_POS;%.3f;%.3f;%.3f;%.3f\r", poses[0], poses[1], poses[2], poses[3]);
     break;
@@ -222,11 +222,17 @@ int main(void)
       time = micros();
     }
 
-    if (micros() - time2 > 1000)
+    if (micros() - time2 > 10000)
     {
       for (uint8_t i = 0; i < N_MOTORS; i++)
       {
-        motor_pid_update(&motor_pids[i], set_speed[i], dirs[i]);
+        //motor_pid_update(&motor_pids[i], set_speed[i], dirs[i]);
+        for (uint8_t i = 0; i < N_MOTORS; i++)
+        {
+          poses[i] = encoder_get_rotations(&encoders[i]) * (float)motor_sign[i];
+        }
+        sprintf(out, "CMD_GET_POS;%.3f;%.3f;%.3f;%.3f\r\n", poses[0], poses[1], poses[2], poses[3]);
+        printf(out);
       }
       time2 = micros();
     }

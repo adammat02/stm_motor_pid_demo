@@ -80,8 +80,6 @@ void Error_Handler(void);
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14
 #define TCK_GPIO_Port GPIOA
-#define M1_DIRB5_Pin GPIO_PIN_5
-#define M1_DIRB5_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

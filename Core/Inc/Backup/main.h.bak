@@ -57,8 +57,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define TIM2_PSC 19
-#define TIM2_ARR 255
+#define TIM8_PSC 19
+#define TIM8_ARR 255
 #define TIM5_PSC 79
 #define B1_Pin GPIO_PIN_13
 #define B1_GPIO_Port GPIOC
@@ -68,12 +68,20 @@ void Error_Handler(void);
 #define USART_RX_GPIO_Port GPIOA
 #define LD2_Pin GPIO_PIN_5
 #define LD2_GPIO_Port GPIOA
+#define M4_DIR_Pin GPIO_PIN_12
+#define M4_DIR_GPIO_Port GPIOB
+#define M3_DIR_Pin GPIO_PIN_13
+#define M3_DIR_GPIO_Port GPIOB
+#define M2_DIR_Pin GPIO_PIN_14
+#define M2_DIR_GPIO_Port GPIOB
+#define M1_DIR_Pin GPIO_PIN_15
+#define M1_DIR_GPIO_Port GPIOB
 #define TMS_Pin GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14
 #define TCK_GPIO_Port GPIOA
-#define M1_DIR_Pin GPIO_PIN_5
-#define M1_DIR_GPIO_Port GPIOB
+#define M1_DIRB5_Pin GPIO_PIN_5
+#define M1_DIRB5_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
