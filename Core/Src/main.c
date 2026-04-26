@@ -69,7 +69,7 @@ int _write(int file, char *ptr, int len)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-  if (huart == &huart2)
+  if (huart == &huart3)
     uart_rx_byte_callback();
 }
 
@@ -111,9 +111,10 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM4_Init();
   MX_TIM8_Init();
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
   micros_tim_init(&htim5);
-  uart_init(&huart2);
+  uart_init(&huart3);
   controller_init();
 
   /* USER CODE END 2 */

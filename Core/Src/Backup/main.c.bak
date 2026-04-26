@@ -27,11 +27,8 @@
 #include <stdio.h>
 #include "arm_math.h"
 #include "micros.h"
-#include "motor_driver.h"
-#include "encoder.h"
-#include "motor_pid.h"
 #include "uart_comm.h"
-#include "cmd_parser.h"
+#include "controller.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -41,13 +38,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define N_MOTORS 4
-#define PER_REV 1940
-#define MAX_RPM 160
-#define KP 3.0f
-#define KI 0.5f
-#define KD 0.2f
-#define ALPHA 0.5f
+#define CTRL_PERIOD_US 1000
+#define CMD_PERIOD_US 10000
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -58,34 +50,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-motor_t motors[N_MOTORS] = {
-  { .htim = &htim8, .channel = TIM_CHANNEL_1, .dir_port = M1_DIR_GPIO_Port, .dir_pin = M1_DIR_Pin, .max_pwm = TIM8_ARR },
-  { .htim = &htim8, .channel = TIM_CHANNEL_2, .dir_port = M2_DIR_GPIO_Port, .dir_pin = M2_DIR_Pin, .max_pwm = TIM8_ARR },
-  { .htim = &htim8, .channel = TIM_CHANNEL_3, .dir_port = M3_DIR_GPIO_Port, .dir_pin = M3_DIR_Pin, .max_pwm = TIM8_ARR },
-  { .htim = &htim8, .channel = TIM_CHANNEL_4, .dir_port = M4_DIR_GPIO_Port, .dir_pin = M4_DIR_Pin, .max_pwm = TIM8_ARR }
-};
-
-encoder_t encoders[N_MOTORS] = {
-  { .htim = &htim1, .per_rev = PER_REV },
-  { .htim = &htim2, .per_rev = PER_REV },
-  { .htim = &htim3, .per_rev = PER_REV },
-  { .htim = &htim4, .per_rev = PER_REV }
-};
-
-motor_pid_t motor_pids[N_MOTORS] = {
-  { .motor = &motors[0], .encoder = &encoders[0], .max_rpm = MAX_RPM, .kp = KP, .ki = KI, .kd = KD, .alpha = ALPHA },
-  { .motor = &motors[1], .encoder = &encoders[1], .max_rpm = MAX_RPM, .kp = KP, .ki = KI, .kd = KD, .alpha = ALPHA },
-  { .motor = &motors[2], .encoder = &encoders[2], .max_rpm = MAX_RPM, .kp = KP, .ki = KI, .kd = KD, .alpha = ALPHA },
-  { .motor = &motors[3], .encoder = &encoders[3], .max_rpm = MAX_RPM, .kp = KP, .ki = KI, .kd = KD, .alpha = ALPHA }
-};
-
-RotationDirection_t dirs[N_MOTORS] = { ROTATION_CCW, ROTATION_CCW, ROTATION_CCW, ROTATION_CCW };
-int8_t motor_sign[N_MOTORS] = { 1, -1, 1, -1};
-float poses[N_MOTORS];
-float32_t set_speed[N_MOTORS];
-uint32_t time, time2;
-char rx_buff[100], out[128];
-Command cmd;
+uint32_t cmd_timer, ctrl_timer;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -104,49 +69,10 @@ int _write(int file, char *ptr, int len)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-  if (huart == &huart2)
+  if (huart == &huart3)
     uart_rx_byte_callback();
 }
 
-void execute_command(const Command *cmd)
-{
-  CmdType type = cmd->cmd;
-  switch (type)
-  {
-  case CMD_GET_POS:
-  {
-    for (uint8_t i = 0; i < N_MOTORS; i++)
-    {
-      poses[i] = encoder_get_rotations(&encoders[i]) * (float)motor_sign[i];
-    }
-    sprintf(out, "CMD_GET_POS;%.3f;%.3f;%.3f;%.3f\r", poses[0], poses[1], poses[2], poses[3]);
-    break;
-  }
-  case CMD_SET_SPEED:
-  {
-    sprintf(out, "CMD_SET_SPEED;%hd;%hd;%hd;%hd\r", cmd->speeds[0], cmd->speeds[1], cmd->speeds[2], cmd->speeds[3]);
-    for (uint8_t i = 0; i < N_MOTORS; i++)
-    {
-      int16_t dir = cmd->speeds[i] * motor_sign[i];
-      dirs[i] = (dir >= 0) ? ROTATION_CCW : ROTATION_CW;
-      set_speed[i] = fabsf(cmd->speeds[i]);
-    }
-    break;
-  }
-  case CMD_SET_PID:
-  {
-    sprintf(out, "CMD_SET_PID;%.2f;%.2f;%.2f;\r", cmd->set_pid.kp, cmd->set_pid.ki, cmd->set_pid.kd);
-    for (uint8_t i = 0; i < N_MOTORS; i++)
-    {
-      motor_pid_set_pid(&motor_pids[i], cmd->set_pid.kp, cmd->set_pid.ki, cmd->set_pid.kd);
-    }
-    break;
-  }
-  default:
-    break;
-  }
-  uart_send_str(out);
-}
 /* USER CODE END 0 */
 
 /**
@@ -185,56 +111,30 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM4_Init();
   MX_TIM8_Init();
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-
   micros_tim_init(&htim5);
-  uart_init(&huart2);
-
-  for (uint8_t i = 0; i < N_MOTORS; i++)
-  {
-    motor_init(&motors[i]);
-    encoder_init(&encoders[i]);
-    motor_pid_init(&motor_pids[i]);
-  }
+  uart_init(&huart3);
+  controller_init();
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  time = micros();
-  time2 = micros();
+  cmd_timer = micros();
+  ctrl_timer = micros();
   while (1)
   {
-    if (micros() - time > 10000)
+    if (micros() - cmd_timer > CMD_PERIOD_US)
     {
-      if (uart_is_line())
-      {
-        uart_get_line(rx_buff, sizeof(rx_buff));
-        if (parse_command(rx_buff, &cmd))
-        {
-          execute_command(&cmd);
-        }
-        else
-        {
-          uart_send_str("ERR\r");
-        }
-      }
-      time = micros();
+      controller_poll();
+      cmd_timer = micros();
     }
 
-    if (micros() - time2 > 10000)
+    if (micros() - ctrl_timer > CTRL_PERIOD_US)
     {
-      for (uint8_t i = 0; i < N_MOTORS; i++)
-      {
-        //motor_pid_update(&motor_pids[i], set_speed[i], dirs[i]);
-        for (uint8_t i = 0; i < N_MOTORS; i++)
-        {
-          poses[i] = encoder_get_rotations(&encoders[i]) * (float)motor_sign[i];
-        }
-        sprintf(out, "CMD_GET_POS;%.3f;%.3f;%.3f;%.3f\r\n", poses[0], poses[1], poses[2], poses[3]);
-        printf(out);
-      }
-      time2 = micros();
+      controller_update();
+      ctrl_timer = micros();
     }
     /* USER CODE END WHILE */
 
