@@ -41,7 +41,7 @@ static void controller_execute(const Command *cmd)
     // sprintf(out, "CMD_SET_SPEED;%hd;%hd;%hd;%hd\r", cmd->speeds[0], cmd->speeds[1], cmd->speeds[2], cmd->speeds[3]);
     for (uint8_t i = 0; i < N_MOTORS; i++)
     {
-      int16_t dir = cmd->speeds[i] * motor_sign[i];
+      float dir = cmd->speeds[i] * motor_sign[i];
       dirs[i] = (dir >= 0) ? ROTATION_CCW : ROTATION_CW;
       set_speed[i] = fabsf(cmd->speeds[i]);
     }
