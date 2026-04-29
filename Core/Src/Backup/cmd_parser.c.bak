@@ -13,15 +13,15 @@ bool parse_command(const char *line, Command *cmd)
   {
     case 'S':
     {
-      int16_t s0, s1, s2, s3;
-      if (sscanf(line, " S %hd %hd %hd %hd", &s0, &s1, &s2, &s3) != 4)
+      float s[4];
+      if (sscanf(line, " S %f %f %f %f", &s[0], &s[1], &s[2], &s[3]) != 4)
         return false;
       
       cmd->cmd = CMD_SET_SPEED;
-      cmd->speeds[0] = s0;
-      cmd->speeds[1] = s1;
-      cmd->speeds[2] = s2;
-      cmd->speeds[3] = s3;
+      cmd->speeds[0] = s[0];
+      cmd->speeds[1] = s[1];
+      cmd->speeds[2] = s[2];
+      cmd->speeds[3] = s[3];
       return true;
     }
     case 'P':
