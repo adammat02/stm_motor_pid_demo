@@ -10,11 +10,14 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
+#include <stdbool.h>
+
 /**
  * @brief Initialize motors, encoders, and PID controllers.
  *        Must be called once before poll or update.
+ * @param debug  When true, RX/TX traffic is printed to the debug serial (UART2).
  */
-void controller_init(void);
+void controller_init(bool debug);
 
 /**
  * @brief Check for a new UART command and execute it if available.

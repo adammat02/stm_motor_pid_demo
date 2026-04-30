@@ -115,7 +115,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   micros_tim_init(&htim5);
   uart_init(&huart3);
-  controller_init();
+  controller_init(false);
 
   /* USER CODE END 2 */
 

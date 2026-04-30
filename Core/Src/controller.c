@@ -1,6 +1,7 @@
 #include "controller.h"
 #include "ctrl_config.h"
 #include <stdio.h>
+#include <stdbool.h>
 #include "uart_comm.h"
 #include "micros.h"
 #include "cmd_parser.h"
@@ -11,9 +12,11 @@ static RotationDirection_t dirs[N_MOTORS] =
 static float32_t set_speed[N_MOTORS];
 static char rx_buff[100], out[128];
 static uint32_t last_cmd_us = 0;
+static bool debug_enabled = false;
 
-void controller_init()
+void controller_init(bool debug)
 {
+  debug_enabled = debug;
   for (uint8_t i = 0; i < N_MOTORS; i++)
   {
     motor_init(&motors[i]);
@@ -83,11 +86,15 @@ static void controller_execute(const Command *cmd)
     {
       encoder_reset(&encoders[i]);
     }
+    strcpy(out, "OK\r");
+    break;
   }
   default:
     strcpy(out, "ERR\r");
     break;
   }
+  if (debug_enabled)
+    printf("[TX] %s\n", out);
   uart_send_str(out);
 }
 
@@ -97,6 +104,8 @@ void controller_poll(void)
   if (uart_is_line())
   {
     uart_get_line(rx_buff, sizeof(rx_buff));
+    if (debug_enabled)
+      printf("[RX] %s\n", rx_buff);
     if (parse_command(rx_buff, &cmd))
     {
       last_cmd_us = micros();
@@ -104,6 +113,8 @@ void controller_poll(void)
     }
     else
     {
+      if (debug_enabled)
+        printf("[TX] ERR\n");
       uart_send_str("ERR\r");
     }
   }
