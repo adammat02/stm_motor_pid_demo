@@ -38,4 +38,11 @@ void encoder_init(encoder_t *encoder);
  */
 float encoder_get_rotations(encoder_t *encoder);
 
+/**
+ * @brief Reset the accumulated rotation count to zero.
+ *
+ * @param encoder Pointer to encoder handle.
+ */
+void encoder_reset(encoder_t *encoder);
+
 #endif

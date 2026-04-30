@@ -8,40 +8,40 @@ bool parse_command(const char *line, Command *cmd)
   char type;
   if (sscanf(line, " %c", &type) < 1)
     return false;
-  
+
   switch (type)
   {
-    case 'S':
-    {
-      float s[4];
-      if (sscanf(line, " S %f %f %f %f", &s[0], &s[1], &s[2], &s[3]) != 4)
-        return false;
-      
-      cmd->cmd = CMD_SET_SPEED;
-      cmd->speeds[0] = s[0];
-      cmd->speeds[1] = s[1];
-      cmd->speeds[2] = s[2];
-      cmd->speeds[3] = s[3];
-      return true;
-    }
-    case 'P':
-    {
-      float kp, ki, kd;
-      if (sscanf(line, " P %f %f %f", &kp, &ki, &kd) != 3)
-        return false;
-      
-      cmd->cmd = CMD_SET_PID;
-      cmd->set_pid.kp = kp;
-      cmd->set_pid.ki = ki;
-      cmd->set_pid.kd = kd;
-      return true;
-    }
-    case 'E':
-    {      
-      cmd->cmd = CMD_GET_POS;
-      return true;
-    }
-    default:
-      return false;
+  case CMD_SET_SPEED:
+  {
+    cmd->cmd = CMD_SET_SPEED;
+    return sscanf(line, " %*c %f %f %f %f",
+                  &cmd->data.speeds[0], &cmd->data.speeds[1],
+                  &cmd->data.speeds[2], &cmd->data.speeds[3]) == 4;
+  }
+  case CMD_SET_PID:
+  {
+    cmd->cmd = CMD_SET_PID;
+    return sscanf(line, " %*c %f %f %f",
+                  &cmd->set_pid.kp, &cmd->set_pid.ki, &cmd->set_pid.kd) == 3;
+  }
+  case CMD_FULL_FRAME_RX:
+  {
+    cmd->cmd = CMD_FULL_FRAME_RX;
+    return sscanf(line, " %*c %f %f %f %f",
+                  &cmd->data.speeds[0], &cmd->data.speeds[1],
+                  &cmd->data.speeds[2], &cmd->data.speeds[3]) == 4;
+  }
+  case CMD_GET_POS:
+  {
+    cmd->cmd = CMD_GET_POS;
+    return true;
+  }
+  case CMD_RESET:
+  {
+    cmd->cmd = CMD_RESET;
+    return true;
+  }
+  default:
+    return false;
   }
 }
