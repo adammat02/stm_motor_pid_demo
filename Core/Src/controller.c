@@ -10,6 +10,7 @@ static RotationDirection_t dirs[N_MOTORS] =
 
 static float32_t set_speed[N_MOTORS];
 static char rx_buff[100], out[128];
+static uint32_t last_cmd_us = 0;
 
 void controller_init()
 {
@@ -98,6 +99,7 @@ void controller_poll(void)
     uart_get_line(rx_buff, sizeof(rx_buff));
     if (parse_command(rx_buff, &cmd))
     {
+      last_cmd_us = micros();
       controller_execute(&cmd);
     }
     else
@@ -109,6 +111,13 @@ void controller_poll(void)
 
 void controller_update()
 {
+  if (micros() - last_cmd_us > CMD_TIMEOUT_US)
+  {
+    for (uint8_t i = 0; i < N_MOTORS; i++)
+    {
+      set_speed[i] = 0.0;
+    }
+  }
   for (uint8_t i = 0; i < N_MOTORS; i++)
   {
     motor_pid_update(&motor_pids[i], set_speed[i], dirs[i]);

@@ -12,6 +12,7 @@
 #define KI 0.5f
 #define KD 0.2f
 #define ALPHA 0.5f
+#define CMD_TIMEOUT_US 500000
 
 static motor_t motors[N_MOTORS] = {
   { .htim = &htim8, .channel = TIM_CHANNEL_1, .dir_port = M1_DIR_GPIO_Port, .dir_pin = M1_DIR_Pin, .max_pwm = TIM8_ARR },
