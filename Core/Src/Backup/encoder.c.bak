@@ -33,3 +33,10 @@ float encoder_get_rotations(encoder_t *encoder)
   encoder->rotations += (float)diff / (float)encoder->per_rev;
   return encoder->rotations;
 }
+
+void encoder_reset(encoder_t *encoder)
+{
+  __HAL_TIM_SET_COUNTER(encoder->htim, 0);
+  encoder->state = 0;
+  encoder->rotations = 0;
+}

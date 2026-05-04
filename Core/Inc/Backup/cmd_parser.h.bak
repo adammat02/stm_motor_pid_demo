@@ -3,9 +3,11 @@
  * @brief Simple text command parser.
  *
  * Parses single-line ASCII commands into a Command struct. Supported forms:
- *   - "S <s0> <s1> <s2> <s3>"  set speed of 4 motors (int16)
+ *   - "S <s0> <s1> <s2> <s3>"  set speed of 4 motors (float, RPM)
  *   - "P <kp> <ki> <kd>"       set PID gains (float)
- *   - "E"                      request encoder position
+ *   - "F <s0> <s1> <s2> <s3>"  full frame: set speeds, respond with encoder positions
+ *   - "E"                      request encoder positions
+ *   - "R"                      reset encoder counters
  */
 
 #ifndef CMD_PARSER_H
@@ -16,10 +18,12 @@
 
 /** Recognised command types. */
 typedef enum {
-  CMD_SET_SPEED,
-  CMD_SET_PID,
-  CMD_GET_POS,
-  CMD_UNKNOWN
+  CMD_SET_SPEED = 'S',
+  CMD_SET_PID = 'P',
+  CMD_GET_POS = 'E',
+  CMD_RESET = 'R',
+  CMD_FULL_FRAME_RX = 'F',
+  CMD_FULL_FRAME_TX = 'A'
 } CmdType;
 
 /** Payload for CMD_SET_PID. */
@@ -28,13 +32,19 @@ typedef struct
   float kp, ki, kd;
 } set_pid_t;
 
+/** Payload for CMD_SET_SPEED and CMD_FULL_FRAME_RX. */
+typedef struct
+{
+  float speeds[4];
+} frame_rx;
+
 /** Parsed command with tag-dependent payload. */
 typedef struct
 {
   CmdType cmd;
   union
   {
-    int16_t speeds[4];   /**< Used when cmd == CMD_SET_SPEED. */
+    frame_rx data;
     set_pid_t set_pid;   /**< Used when cmd == CMD_SET_PID. */
   };
 
