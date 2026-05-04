@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "adc.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
@@ -73,6 +74,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     uart_rx_byte_callback();
 }
 
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
+{
+  controller_adc_callback(hadc);
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -112,6 +118,8 @@ int main(void)
   MX_TIM4_Init();
   MX_TIM8_Init();
   MX_USART3_UART_Init();
+  MX_ADC1_Init();
+  MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
   micros_tim_init(&htim5);
   uart_init(&huart3);

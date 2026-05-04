@@ -5,6 +5,7 @@
 #include "encoder.h"
 #include "motor_pid.h"
 #include "battery.h"
+#include "tof_vl53l0x.h"
 
 #define N_MOTORS 4
 #define PER_REV 1940
@@ -48,6 +49,11 @@ static battery_t bat = {
   .vref = V_REF,
   .adc_max = ADC_MAX,
   .div_ratio = DIV_RATIO
+};
+
+static tof_t tof = {
+  .hi2c = &hi2c1,
+  .i2c_addr = 0x52
 };
 
 #endif

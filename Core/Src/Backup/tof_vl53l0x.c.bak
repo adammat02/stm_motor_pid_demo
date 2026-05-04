@@ -1,0 +1,69 @@
+#include "tof_vl53l0x.h"
+
+/**
+ * @brief Inicjalizuje czujnik VL53L0X z podanym uchwytem I2C i adresem I2C.
+ *
+ * @param handler Wskaźnik do struktury obsługującej czujnik.
+ * @param i2cHandle Wskaźnik do uchwytu I2C.
+ * @param i2cAddress Adres I2C czujnika.
+ */
+void VL53L0X_Init(VL53L0X_Handler *handler, I2C_HandleTypeDef *i2cHandle, uint8_t i2cAddress)
+{
+
+
+  handler->i2cHandle = i2cHandle;
+  handler->i2cAddress = i2cAddress;
+  handler->dev.I2cHandle = i2cHandle;
+  handler->dev.I2cDevAddr = i2cAddress;
+
+  VL53L0X_WaitDeviceBooted(&handler->dev);
+  VL53L0X_DataInit(&handler->dev);
+  VL53L0X_StaticInit(&handler->dev);
+
+  uint32_t refSpadCount;
+  uint8_t isApertureSpads;
+  uint8_t VhvSettings;
+  uint8_t PhaseCal;
+
+  VL53L0X_PerformRefCalibration(&handler->dev, &VhvSettings, &PhaseCal);
+  VL53L0X_PerformRefSpadManagement(&handler->dev, &refSpadCount, &isApertureSpads);
+  VL53L0X_SetDeviceMode(&handler->dev, VL53L0X_DEVICEMODE_CONTINUOUS_RANGING);
+
+  VL53L0X_SetLimitCheckEnable(&handler->dev, VL53L0X_CHECKENABLE_SIGMA_FINAL_RANGE, 1);
+  VL53L0X_SetLimitCheckEnable(&handler->dev, VL53L0X_CHECKENABLE_SIGNAL_RATE_FINAL_RANGE, 1);
+  VL53L0X_SetLimitCheckValue(&handler->dev, VL53L0X_CHECKENABLE_SIGNAL_RATE_FINAL_RANGE, (FixPoint1616_t)(0.02 * 65536));
+  VL53L0X_SetLimitCheckValue(&handler->dev, VL53L0X_CHECKENABLE_SIGMA_FINAL_RANGE, (FixPoint1616_t)(60 * 65536));
+  VL53L0X_SetMeasurementTimingBudgetMicroSeconds(&handler->dev, 10000);
+  VL53L0X_SetVcselPulsePeriod(&handler->dev, VL53L0X_VCSEL_PERIOD_PRE_RANGE, 18);
+  VL53L0X_SetVcselPulsePeriod(&handler->dev, VL53L0X_VCSEL_PERIOD_FINAL_RANGE, 14);
+}
+
+/**
+ * @brief Rozpoczyna pomiary w trybie ciągłym dla czujnika VL53L0X.
+ *
+ * @param handler Wskaźnik do struktury obsługującej czujnik.
+ */
+void VL53L0X_Start(VL53L0X_Handler *handler)
+{
+  VL53L0X_StartMeasurement(&handler->dev);
+}
+
+/**
+ * @brief Pobiera zmierzoną odległość w milimetrach.
+ * Zwraca maksymalnie 500 mm, jeśli pomiar jest nieważny.
+ *
+ * @param handler Wskaźnik do struktury obsługującej czujnik.
+ * @return uint16_t Zmierzona odległość w milimetrach.
+ */
+uint16_t VL53L0X_GetDistance(VL53L0X_Handler *handler)
+{
+  VL53L0X_GetRangingMeasurementData(&handler->dev, &handler->rangingData);
+  if (handler->rangingData.RangeStatus == 0 && handler->rangingData.RangeMilliMeter <= 500)
+  {
+    return handler->rangingData.RangeMilliMeter;
+  }
+  else
+  {
+    return 500; // Zwraca 500, jeśli pomiar jest nieważny
+  }
+}

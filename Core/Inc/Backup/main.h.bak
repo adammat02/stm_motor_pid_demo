@@ -60,14 +60,14 @@ void Error_Handler(void);
 #define TIM8_PSC 19
 #define TIM8_ARR 255
 #define TIM5_PSC 79
+#define TIM6_PSC 7999
+#define TIM6_ARR 999
 #define B1_Pin GPIO_PIN_13
 #define B1_GPIO_Port GPIOC
 #define USART_TX_Pin GPIO_PIN_2
 #define USART_TX_GPIO_Port GPIOA
 #define USART_RX_Pin GPIO_PIN_3
 #define USART_RX_GPIO_Port GPIOA
-#define LD2_Pin GPIO_PIN_5
-#define LD2_GPIO_Port GPIOA
 #define M4_DIR_Pin GPIO_PIN_12
 #define M4_DIR_GPIO_Port GPIOB
 #define M3_DIR_Pin GPIO_PIN_13
