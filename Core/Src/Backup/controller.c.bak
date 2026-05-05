@@ -24,6 +24,7 @@ void controller_init(bool debug)
     motor_pid_init(&motor_pids[i]);
   }
   battery_measure_init(&bat);
+  tof_init(&tof);
 }
 
 void controller_adc_callback(ADC_HandleTypeDef *hadc)
@@ -88,7 +89,7 @@ static void controller_execute(const Command *cmd)
     float vbat = battery_get_voltage(&bat);
 
     // read distance from tof
-    float distance = 0.5;
+    float distance = (float)tof_get_distance(&tof) / 1000.0f;
 
     // sending 
     char tx_type = (char)CMD_FULL_FRAME_TX;

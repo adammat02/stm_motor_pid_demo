@@ -4,39 +4,27 @@
 #include "vl53l0x_api.h"
 #include "i2c.h"
 
-/**
- * @brief Struktura obsługująca czujnik VL53L0X.
- */
+/** VL53L0X sensor handle. */
 typedef struct
 {
-  VL53L0X_Dev_t dev;                            ///< Struktura urządzenia VL53L0X.
-  VL53L0X_RangingMeasurementData_t rangingData; ///< Dane pomiarowe.
-  I2C_HandleTypeDef *i2cHandle;                 ///< Uchwyt I2C.
-  uint8_t i2cAddress;                           ///< Adres I2C czujnika.
-} VL53L0X_Handler;
+  VL53L0X_Dev_t dev;                             /**< VL53L0X device structure. */
+  VL53L0X_RangingMeasurementData_t ranging_data; /**< Ranging measurement data. */
+  I2C_HandleTypeDef *hi2c;                       /**< I2C peripheral handle. */
+  uint8_t i2c_addr;                              /**< I2C address of the sensor. */
+  uint16_t distance;                             /**< Last valid distance reading [mm]. */
+} tof_t;
 
 /**
- * @brief Inicjalizuje czujnik VL53L0X.
- *
- * @param handler Wskaźnik do struktury obsługującej czujnik.
- * @param i2cHandle Wskaźnik do uchwytu I2C.
- * @param i2cAddress Adres I2C czujnika.
+ * @brief Initialize the VL53L0X sensor.
+ * @param tof  Pointer to sensor handle.
  */
-void VL53L0X_Init(VL53L0X_Handler *handler, I2C_HandleTypeDef *i2cHandle, uint8_t i2cAddress);
+void tof_init(tof_t *tof);
 
 /**
- * @brief Rozpoczyna pomiary w trybie ciągłym dla czujnika VL53L0X.
- *
- * @param handler Wskaźnik do struktury obsługującej czujnik.
+ * @brief Return the most recently measured distance in millimetres.
+ * @param tof  Pointer to sensor handle.
+ * @return Distance in mm, or 2000 if the measurement is invalid.
  */
-void VL53L0X_Start(VL53L0X_Handler *handler);
-
-/**
- * @brief Pobiera zmierzoną odległość w milimetrach.
- *
- * @param handler Wskaźnik do struktury obsługującej czujnik.
- * @return uint16_t Zmierzona odległość w milimetrach.
- */
-uint16_t VL53L0X_GetDistance(VL53L0X_Handler *handler);
+uint16_t tof_get_distance(tof_t *tof);
 
 #endif // TOF_VL53L0X_H
